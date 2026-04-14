@@ -177,7 +177,7 @@ python scripts/seed_minio.py                  # seed MinIO bucket (bonus)
 
 
 
-## Testing the pipeline , requires Docker
+## Testing the pipeline , requires Docker)
 
 ```bash
 cp .env.example .env
@@ -198,3 +198,26 @@ python -m etl.extract_minio
 python -c "import duckdb; c=duckdb.connect('data/warehouse/logistics.duckdb'); \
 print(c.execute(\"SELECT table_schema, table_name FROM information_schema.tables WHERE table_schema='raw'\").fetchall())"
 ```
+
+
+OR
+```bash
+
+cp .env.example .env
+docker compose up airflow-init
+docker compose up -d
+  # populate sources                                                                                                                                
+  docker compose exec airflow-scheduler python /opt/airflow/scripts/generate_oltp_data.py
+  docker compose exec airflow-scheduler python /opt/airflow/scripts/generate_tracking_events.py
+  docker compose exec airflow-scheduler python /opt/airflow/scripts/seed_minio.py
+
+  # run the ETL
+  docker compose exec airflow-scheduler python -m etl.extract_oltp
+  docker compose exec airflow-scheduler python -m etl.extract_json
+  docker compose exec airflow-scheduler python -m etl.extract_minio
+
+  # inspect DuckDB
+  docker compose exec airflow-scheduler python -c "import duckdb; c=duckdb.connect('/opt/airflow/data/warehouse/logistics.duckdb');
+  print(c.execute(\"SELECT table_schema, table_name FROM information_schema.tables WHERE table_schema='raw'\").fetchall())"
+  ```
+
