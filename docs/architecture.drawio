@@ -1,0 +1,115 @@
+<mxfile host="app.diagrams.net" modified="2026-04-19T12:00:00.000Z" agent="manual" version="22.1.0">
+  <diagram name="Logistics pipeline" id="logistics-arch">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="826" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="Logistics analytics — data pipeline" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=18;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="380" y="20" width="400" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="src-group" value="Data sources" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#666666;dashed=1;verticalAlign=top;fontStyle=1;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="40" y="80" width="260" height="480" as="geometry" />
+        </mxCell>
+        <mxCell id="src-pg" value="PostgreSQL (OLTP)&#10;&#10;facilities&#10;shipments" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#dae8fc;strokeColor=#6c8ebf;align=center;verticalAlign=middle;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="70" y="130" width="200" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="src-json" value="JSON event logs&#10;&#10;data/raw/events/&#10;events_YYYY-MM-DD_HH.json" style="shape=note;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=center;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="70" y="270" width="200" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="src-minio" value="MinIO object store&#10;&#10;historical_weather_delays.csv&#10;(+2.5 bonus)" style="shape=cloud;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="70" y="400" width="200" height="130" as="geometry" />
+        </mxCell>
+
+        <mxCell id="etl-group" value="Python ETL (pandas)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#666666;dashed=1;verticalAlign=top;fontStyle=1;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="360" y="80" width="240" height="480" as="geometry" />
+        </mxCell>
+        <mxCell id="etl-oltp" value="etl.extract_oltp&#10;(incremental / full)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="390" y="140" width="180" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="etl-json" value="etl.extract_json&#10;(incremental / refresh)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="390" y="280" width="180" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="etl-minio" value="etl.extract_minio&#10;(full replace)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="390" y="430" width="180" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="duckdb" value="DuckDB warehouse&#10;data/warehouse/logistics.duckdb&#10;&#10;raw.facilities&#10;raw.shipments&#10;raw.tracking_events&#10;raw.historical_weather_delays" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;align=center" vertex="1" parent="1">
+          <mxGeometry x="660" y="220" width="240" height="200" as="geometry" />
+        </mxCell>
+
+        <mxCell id="dbt-group" value="dbt (Student 2)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#666666;dashed=1;verticalAlign=top;fontStyle=1;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="960" y="80" width="160" height="480" as="geometry" />
+        </mxCell>
+        <mxCell id="dbt-raw" value="raw (sources)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="985" y="130" width="110" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="dbt-stg" value="stg (staging)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="985" y="230" width="110" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="dbt-mart" value="mart (business)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="985" y="330" width="110" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="dbt-insights" value="KPIs, SLA,&#10;bottleneck reports" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d79b00;dashed=1;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="985" y="430" width="110" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="airflow" value="Airflow&#10;&#10;hourly_etl_pipeline  (@hourly)&#10;daily_refresh_pipeline  (02:00 UTC)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fad7ac;strokeColor=#b46504;fontSize=13;fontStyle=1;align=center" vertex="1" parent="1">
+          <mxGeometry x="340" y="620" width="460" height="100" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e1" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="src-pg" target="etl-oltp">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="src-json" target="etl-json">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="src-minio" target="etl-minio">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e4" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.25;" edge="1" parent="1" source="etl-oltp" target="duckdb">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="etl-json" target="duckdb">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.75;" edge="1" parent="1" source="etl-minio" target="duckdb">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e7" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="duckdb" target="dbt-raw">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="dbt-raw" target="dbt-stg">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="dbt-stg" target="dbt-mart">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="dbt-mart" target="dbt-insights">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e11" style="endArrow=open;dashed=1;html=1;strokeColor=#b46504;exitX=0.25;exitY=0;entryX=0.5;entryY=1;" edge="1" parent="1" source="airflow" target="etl-oltp">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" style="endArrow=open;dashed=1;html=1;strokeColor=#b46504;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" parent="1" source="airflow" target="etl-json">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" style="endArrow=open;dashed=1;html=1;strokeColor=#b46504;exitX=0.75;exitY=0;entryX=0.5;entryY=1;" edge="1" parent="1" source="airflow" target="etl-minio">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e14" style="endArrow=open;dashed=1;html=1;strokeColor=#b46504;exitX=1;exitY=0.5;entryX=0.5;entryY=1;" edge="1" parent="1" source="airflow" target="dbt-mart">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="legend" value="Solid arrow = data flow&#10;Dashed orange = Airflow triggers" style="text;html=1;strokeColor=#666666;fillColor=#f5f5f5;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="40" y="620" width="240" height="50" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

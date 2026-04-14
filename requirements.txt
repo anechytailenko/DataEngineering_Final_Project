@@ -1,0 +1,11 @@
+# Local development (for running scripts outside Docker / notebooks).
+# Versions match those installed inside Airflow via _PIP_ADDITIONAL_REQUIREMENTS.
+
+pandas==2.2.3
+polars==1.12.0
+duckdb==1.1.3
+psycopg2-binary==2.9.10
+sqlalchemy==1.4.54
+minio==7.2.10
+faker==30.8.2
+python-dotenv==1.0.1
