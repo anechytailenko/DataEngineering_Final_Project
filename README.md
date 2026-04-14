@@ -185,18 +185,18 @@ docker compose up airflow-init
 docker compose up -d
 
 # populate sources
-python scripts/generate_oltp_data.py
-python scripts/generate_tracking_events.py
-python scripts/seed_minio.py
+ocker compose exec airflow-scheduler python /opt/airflow/scripts/generate_oltp_data.py
+docker compose exec airflow-scheduler python /opt/airflow/scripts/generate_tracking_events.py
+docker compose exec airflow-scheduler python /opt/airflow/scripts/seed_minio.py
 
 # run the ETL
-python -m etl.extract_oltp
-python -m etl.extract_json
-python -m etl.extract_minio
+docker compose exec airflow-scheduler python -m etl.extract_oltp
+docker compose exec airflow-scheduler python -m etl.extract_json
+docker compose exec airflow-scheduler python -m etl.extract_minio
 
 # inspect DuckDB
-python -c "import duckdb; c=duckdb.connect('data/warehouse/logistics.duckdb'); \
-print(c.execute(\"SELECT table_schema, table_name FROM information_schema.tables WHERE table_schema='raw'\").fetchall())"
+docker compose exec airflow-scheduler python -c "import duckdb; c=duckdb.connect('/opt/airflow/data/warehouse/logistics.duckdb'); print(c.execute(\"SELECT table_schema, table_name FROM information_schema.tables WHERE table_schema='raw'\").fetchall())"
+
 ```
 
 

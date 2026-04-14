@@ -17,17 +17,16 @@ from etl.utils import duckdb_connect, get_oltp_conn_string
 
 
 def extract_facilities(engine) -> pd.DataFrame:
-    return pd.read_sql(
-        text("""
+    with engine.connect() as conn:
+        result = conn.execute(text("""
             SELECT facility_id,
                    facility_name,
                    facility_type,
                    city,
                    max_capacity_per_day
             FROM facilities
-        """),
-        engine,
-    )
+        """))
+        return pd.DataFrame(result.fetchall(), columns=list(result.keys()))
 
 
 def extract_shipments(engine, since=None) -> pd.DataFrame:
@@ -47,7 +46,9 @@ def extract_shipments(engine, since=None) -> pd.DataFrame:
     if since is not None:
         query += " WHERE created_at > :since"
         params["since"] = since
-    return pd.read_sql(text(query), engine, params=params)
+    with engine.connect() as conn:
+        result = conn.execute(text(query), params)
+        return pd.DataFrame(result.fetchall(), columns=list(result.keys()))
 
 
 def get_max_shipment_ts(duck):
