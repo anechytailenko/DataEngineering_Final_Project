@@ -1,13 +1,5 @@
 # Architecture
 
-This is the pipeline half of the project (the dbt half is Student 2's). It
-ingests from three kinds of sources, lands everything in a local DuckDB
-file, and lets Airflow decide when to rebuild what.
-
-The editable diagram is `architecture.drawio` — open it with
-[diagrams.net](https://app.diagrams.net), the VS Code extension "Draw.io
-Integration", or the desktop app. Below is a Mermaid sketch for quick reading:
-
 ```mermaid
 flowchart LR
     pg[(PostgreSQL<br/>facilities, shipments)] --> etl_pg[extract_oltp]
@@ -28,10 +20,7 @@ flowchart LR
     airflow -.dbt build.-> dbt_mart
 ```
 
-## Why three source types (and not just one)
-
-The assignment requires three, but the logistics domain actually justifies
-them — each slice of data has different shape and cadence:
+## source types 
 
 - **OLTP (PostgreSQL).** `facilities` and `shipments` are the normalized,
   transactional backbone. Writes are infrequent but consistency matters —
@@ -47,19 +36,6 @@ them — each slice of data has different shape and cadence:
   reference data). Object storage also matches how you'd actually receive a
   vendor's CSV dump in practice.
 
-## The warehouse choice: DuckDB
-
-DuckDB is a single file, no daemon, analytical column-store. For a student
-project where the whole stack has to run in Docker on one machine, it's
-close to ideal: free, fast scans, and plays nicely with pandas (`conn.register`
-lets you move a DataFrame into SQL without serialization).
-
-The obvious caveat is that DuckDB is a single-writer database. I leaned into
-this rather than fighting it: both DAGs hold `max_active_runs=1`, tasks
-inside each DAG are sequential, and the two DAGs are scheduled at times
-that (in practice) don't collide. If this stopped being true at higher load,
-the fix would be an Airflow Pool named `duckdb_writer` that both DAGs
-attach to — one concurrency slot globally.
 
 ## Extract and load
 
@@ -116,16 +92,3 @@ In the real world this also gives you a knob: if `mart_bottleneck_analysis`
 suddenly needs to refresh every hour, you just add the `hourly` tag and the
 existing hourly DAG picks it up — no DAG change.
 
-## What I'd change next
-
-A few things I noted while building but didn't implement, because they're
-outside the assignment:
-
-- A small `tests/` folder with pytest for the ETL modules. Right now the
-  closest thing is the smoke test I wrote under `etl/` while developing
-  and deleted before committing.
-- Move the Postgres connection to an Airflow Connection (`PostgresHook`)
-  instead of env vars — cleaner for a real deployment.
-- Compress the JSON files under `data/raw/events/`. For 60 days of history
-  at 10k shipments we get ~1200 hourly files; gzip would cut disk use ~10x.
-  DuckDB's `read_json_auto` handles gzip transparently.

@@ -3,8 +3,8 @@
 End-to-end analytics stack for a logistics domain (shipments, tracking events,
 facilities). Built for the AI340 Assignment #3.
 
-- **Student 1 (this repo's scope):** ETL pipelines, Airflow orchestration, DuckDB warehouse, MinIO.
-- **Student 2 (separate work):** dbt project in `dbt_project/` with raw → staging → mart layers.
+- **Yuliia Martynova** ETL pipelines, Airflow orchestration, DuckDB warehouse, MinIO.
+- **Anna Nechytailenko** dbt project
 
 ## Architecture
 
@@ -43,11 +43,6 @@ MinIO (large CSV)  ─┘                                      ▲
 | PostgreSQL (meta)  | internal    | Airflow metadata store only           |
 | MinIO S3 API       | 9000        | for clients (boto3, `minio` sdk)      |
 | MinIO console      | 9001        | http://localhost:9001 (minioadmin)    |
-
-## Prerequisites
-
-- Docker Desktop (Windows) with WSL2 backend
-- ~4 GB free RAM for the stack
 
 ## First-time setup
 
@@ -180,26 +175,9 @@ python scripts/seed_minio.py                  # seed MinIO bucket (bonus)
 # Open http://localhost:8080 and unpause both DAGs
 ```
 
-## What's implemented so far
 
-- [x] Stage 1 — project skeleton, docker-compose (Postgres OLTP, Postgres Airflow, MinIO, Airflow webserver/scheduler)
-- [x] Stage 2 — OLTP schema + Faker-based data generator
-- [x] Stage 3 — JSON tracking-event generator
-- [x] Stage 4 — ETL scripts (OLTP → DuckDB, JSON → DuckDB, MinIO → DuckDB)
-- [x] Stage 5 — Airflow DAGs: hourly ETL + `dbt build --select tag:hourly`, daily refresh + `dbt build --select tag:daily`
-- [x] Stage 6 — Architecture writeup + defense notes (see `docs/`)
 
-## Documentation
-
-- `docs/ARCHITECTURE.md` — design rationale (English, technical)
-- `docs/defense_notes.md` — oral-defense prep in Ukrainian, keyed to the
-  grading rubric's theory section
-- `docs/architecture.drawio` — editable pipeline diagram; open in
-  [diagrams.net](https://app.diagrams.net), the VS Code extension
-  "Draw.io Integration", or the draw.io desktop app and export to PNG/SVG
-  for slides
-
-## Testing the pipeline end-to-end (requires Docker)
+## Testing the pipeline , requires Docker
 
 ```bash
 cp .env.example .env
