@@ -204,20 +204,258 @@ OR
 ```bash
 
 cp .env.example .env
-docker compose up airflow-init
 docker compose up -d
   # populate sources                                                                                                                                
-  docker compose exec airflow-scheduler python /opt/airflow/scripts/generate_oltp_data.py
-  docker compose exec airflow-scheduler python /opt/airflow/scripts/generate_tracking_events.py
-  docker compose exec airflow-scheduler python /opt/airflow/scripts/seed_minio.py
+    make populate-sources
 
-  # run the ETL
-  docker compose exec airflow-scheduler python -m etl.extract_oltp
-  docker compose exec airflow-scheduler python -m etl.extract_json
-  docker compose exec airflow-scheduler python -m etl.extract_minio
+  # run the ETL - optional cause dag do this underhood 
+    make run-etl
 
   # inspect DuckDB
-  docker compose exec airflow-scheduler python -c "import duckdb; c=duckdb.connect('/opt/airflow/data/warehouse/logistics.duckdb');
-  print(c.execute(\"SELECT table_schema, table_name FROM information_schema.tables WHERE table_schema='raw'\").fetchall())"
+    make inspect-db
+    
+    make inspect-raw-db
+
+    make inspect-main-db
+
+  # command to include docker compose down -v + clean all local generated files
+    make down-all
+
+
   ```
 
+
+
+
+
+
+## Database Schema Report
+
+## 1. Raw Schema (`raw`)
+This schema contains the initial ingested data from our sources.
+
+### `_ingested_files`
+* `file_name` (VARCHAR)
+* `row_count` (INTEGER)
+* `ingested_at` (TIMESTAMP)
+
+### `facilities`
+* `facility_id` (BIGINT)
+* `facility_name` (VARCHAR)
+* `facility_type` (VARCHAR)
+* `city` (VARCHAR)
+* `max_capacity_per_day` (BIGINT)
+
+### `historical_weather_delays`
+* `date` (DATE)
+* `city` (VARCHAR)
+* `weather_condition` (VARCHAR)
+* `precipitation_mm` (DOUBLE)
+* `regional_delay_flag` (BOOLEAN)
+
+### `shipments`
+* `shipment_id` (VARCHAR)
+* `sender_id` (BIGINT)
+* `origin_facility_id` (BIGINT)
+* `destination_facility_id` (BIGINT)
+* `weight_kg` (DECIMAL(4,2))
+* `declared_value` (DECIMAL(6,2))
+* `shipping_cost` (DECIMAL(5,2))
+* `created_at` (TIMESTAMP_NS)
+* `estimated_delivery_date` (DATE)
+
+### `tracking_events`
+* `event_id` (VARCHAR)
+* `shipment_id` (VARCHAR)
+* `status_code` (INTEGER)
+* `facility_id` (INTEGER)
+* `event_timestamp` (VARCHAR)
+* `courier_notes` (VARCHAR)
+* `source_file` (VARCHAR)
+
+---
+
+## 2. Main Schema (`main`)
+This schema contains the cleaned, enriched, and aggregated models built by dbt.
+
+### Staging Models
+**`stg_facilities`**
+* `facility_id` (BIGINT)
+* `facility_name` (VARCHAR)
+* `facility_type` (VARCHAR)
+* `city` (VARCHAR)
+* `max_capacity_per_day` (BIGINT)
+
+**`stg_shipments`**
+* `shipment_id` (VARCHAR)
+* `sender_id` (BIGINT)
+* `origin_facility_id` (BIGINT)
+* `destination_facility_id` (BIGINT)
+* `weight_kg` (DECIMAL(4,2))
+* `declared_value` (DECIMAL(6,2))
+* `shipping_cost` (DECIMAL(5,2))
+* `created_at_ts` (TIMESTAMP)
+* `estimated_delivery_date` (DATE)
+
+**`stg_tracking_events`**
+* `event_id` (VARCHAR)
+* `shipment_id` (VARCHAR)
+* `status_code` (INTEGER)
+* `facility_id` (INTEGER)
+* `event_timestamp_ts` (TIMESTAMP)
+* `courier_notes` (VARCHAR)
+* `source_file` (VARCHAR)
+
+**`stg_weather_delays`**
+* `weather_date` (DATE)
+* `city` (VARCHAR)
+* `weather_condition` (VARCHAR)
+* `precipitation_mm` (DOUBLE)
+* `regional_delay_flag` (BOOLEAN)
+
+**`status_codes_mapping`** (Seed)
+* `status_code` (INTEGER)
+* `status_name` (VARCHAR)
+* `is_final_state` (BOOLEAN)
+* `is_exception` (BOOLEAN)
+
+### Intermediate Models
+**`int_shipments_enriched`**
+* `shipment_id` (VARCHAR)
+* `sender_id` (BIGINT)
+* `origin_facility_id` (BIGINT)
+* `origin_facility_name` (VARCHAR)
+* `origin_city` (VARCHAR)
+* `destination_facility_id` (BIGINT)
+* `destination_facility_name` (VARCHAR)
+* `destination_city` (VARCHAR)
+* `weight_kg` (DECIMAL(4,2))
+* `declared_value` (DECIMAL(6,2))
+* `shipping_cost` (DECIMAL(5,2))
+* `created_at_ts` (TIMESTAMP)
+* `estimated_delivery_date` (DATE)
+
+**`int_tracking_with_lag`**
+* `event_id` (VARCHAR)
+* `shipment_id` (VARCHAR)
+* `status_code` (INTEGER)
+* `status_name` (VARCHAR)
+* `is_exception` (BOOLEAN)
+* `facility_id` (INTEGER)
+* `event_timestamp_ts` (TIMESTAMP)
+* `courier_notes` (VARCHAR)
+* `previous_event_timestamp_ts` (TIMESTAMP)
+* `hours_since_last_event` (DOUBLE)
+
+### Data Marts (Business Intelligence)
+**`mart_courier_issues_summary`**
+* `courier_notes` (VARCHAR)
+* `frequency_count` (BIGINT)
+
+**`mart_daily_active_network`**
+* `network_date` (DATE)
+* `active_facilities_count` (BIGINT)
+
+**`mart_daily_revenue_summary`**
+* `shipment_date` (DATE)
+* `total_shipments` (BIGINT)
+* `total_revenue` (DECIMAL(38,2))
+* `total_weight_kg` (DECIMAL(38,2))
+
+**`mart_delivery_performance`**
+* `shipment_id` (VARCHAR)
+* `estimated_delivery_date` (DATE)
+* `actual_delivery_date` (DATE)
+* `is_on_time` (BOOLEAN)
+
+**`mart_exceptions_analysis`**
+* `event_id` (VARCHAR)
+* `shipment_id` (VARCHAR)
+* `origin_city` (VARCHAR)
+* `destination_city` (VARCHAR)
+* `exception_type` (VARCHAR)
+* `exception_time` (TIMESTAMP)
+* `courier_notes` (VARCHAR)
+* `potential_financial_loss` (DECIMAL(6,2))
+
+**`mart_facility_bottlenecks`**
+* `facility_name` (VARCHAR)
+* `city` (VARCHAR)
+* `avg_hours_delayed` (DOUBLE)
+
+**`mart_facility_capacity_utilization`**
+* `facility_name` (VARCHAR)
+* `city` (VARCHAR)
+* `scan_date` (DATE)
+* `daily_scans` (BIGINT)
+* `max_capacity_per_day` (BIGINT)
+* `utilization_pct` (DOUBLE)
+
+**`mart_facility_traffic`**
+* `facility_id` (BIGINT)
+* `facility_name` (VARCHAR)
+* `city` (VARCHAR)
+* `total_scans` (BIGINT)
+* `unique_shipments_handled` (BIGINT)
+
+**`mart_financial_exposure`**
+* `origin_city` (VARCHAR)
+* `exception_type` (VARCHAR)
+* `lost_or_damaged_count` (BIGINT)
+* `total_financial_exposure` (DECIMAL(38,2))
+
+**`mart_route_performance`**
+* `origin_city` (VARCHAR)
+* `destination_city` (VARCHAR)
+* `total_shipments` (BIGINT)
+* `avg_transit_hours` (DOUBLE)
+* `exception_count` (HUGEINT)
+
+**`mart_shipment_lifecycle`**
+* `shipment_id` (VARCHAR)
+* `origin_city` (VARCHAR)
+* `destination_city` (VARCHAR)
+* `weight_kg` (DECIMAL(4,2))
+* `shipping_cost` (DECIMAL(5,2))
+* `total_tracking_events` (BIGINT)
+* `total_transit_time_hours` (DOUBLE)
+* `had_exception` (BOOLEAN)
+
+**`mart_weather_impact`**
+* `weather_date` (DATE)
+* `city` (VARCHAR)
+* `weather_condition` (VARCHAR)
+* `regional_delay_flag` (BOOLEAN)
+* `total_scans` (BIGINT)
+* `exception_count` (HUGEINT)
+
+**`mart_weight_brackets_pricing`**
+* `weight_bracket` (VARCHAR)
+* `shipment_count` (BIGINT)
+* `avg_cost_per_shipment` (DOUBLE)
+
+
+## Screenshots
+
+### Airflow
+
+![Airflow DAG Execution](./assets/dags.png)
+![Airflow_hourly](./assets/dag_hourly.png)
+![Airflow_daily](./assets/dag_daily.png)
+
+### DBT
+
+![DBT_lineage](./assets/dbt_lineage.png)
+
+### Minio
+
+![Minio_buckets](./assets/minio_buckets.png)
+
+
+## Analytics
+
+![1_daily_revenue](./analytics/plots/1_daily_revenue.png)
+![2_top_routes](./analytics/plots/2_top_routes.png)
+![3_facility_traffic](./analytics/plots/3_facility_traffic.png)
+![4_exceptions_breakdown](./analytics/plots/4_exceptions_breakdown.png)
+![5_weight_pricing](./analytics/plots/5_weight_pricing.png)

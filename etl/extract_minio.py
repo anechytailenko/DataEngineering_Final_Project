@@ -3,6 +3,7 @@
 Full replace every run. Seed the bucket first with
 `python scripts/seed_minio.py`.
 """
+
 from __future__ import annotations
 
 import io
@@ -42,8 +43,7 @@ def run() -> dict:
 
     if not client.bucket_exists(bucket):
         raise RuntimeError(
-            f"Bucket '{bucket}' does not exist. "
-            f"Run scripts/seed_minio.py first."
+            f"Bucket '{bucket}' does not exist. " f"Run scripts/seed_minio.py first."
         )
 
     df = download_csv(client, bucket, WEATHER_OBJECT)

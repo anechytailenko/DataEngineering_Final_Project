@@ -1,0 +1,15 @@
+version: 2
+
+sources:
+  - name: logistics
+    schema: raw
+    description: "Raw data ingested via Airflow ETL pipelines"
+    tables:
+      - name: facilities
+        description: "List of logistics hubs and local branches"
+      - name: shipments
+        description: "Core transactional shipment data from OLTP"
+      - name: tracking_events
+        description: "Event logs parsed from JSON tracking data"
+      - name: historical_weather_delays
+        description: "Historical weather data for regional delay analysis sourced from MinIO"

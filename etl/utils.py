@@ -1,4 +1,5 @@
 """Shared helpers for the ETL scripts."""
+
 from __future__ import annotations
 
 import os
