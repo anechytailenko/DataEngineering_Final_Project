@@ -1,0 +1,69 @@
+version: 2
+
+models:
+  - name: stg_facilities
+    description: "Cleaned facilities table"
+    columns:
+      - name: facility_id
+        description: "Facility primary key"
+        data_tests:
+          - unique
+          - not_null
+      - name: facility_type
+        description: "Facility type"
+        data_tests:
+          - accepted_values:
+              values: ['National Hub', 'Regional', 'Local Branch']
+
+  - name: stg_shipments
+    description: "Cleaned shipments table"
+    columns:
+      - name: shipment_id
+        data_tests:
+          - unique
+          - not_null
+      - name: origin_facility_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_facilities')
+              field: facility_id
+      - name: destination_facility_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_facilities')
+              field: facility_id
+
+  - name: stg_tracking_events
+    description: "Cleaned tracking events logs"
+    columns:
+      - name: event_id
+        data_tests:
+          - unique
+          - not_null
+      - name: shipment_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_shipments')
+              field: shipment_id
+      - name: status_code
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('status_codes_mapping')
+              field: status_code
+
+  - name: stg_weather_delays
+    description: "Cleaned historical weather data"
+    columns:
+      - name: weather_date
+        data_tests:
+          - not_null
+      - name: city
+        data_tests:
+          - not_null
+      - name: weather_condition
+        data_tests:
+          - not_null

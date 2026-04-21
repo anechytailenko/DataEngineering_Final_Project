@@ -1,0 +1,10 @@
+status_code,status_name,is_final_state,is_exception
+10,Label Created,false,false
+20,Picked Up,false,false
+30,Arrived At Hub,false,false
+35,Departed Hub,false,false
+40,Out For Delivery,false,false
+50,Delivered,true,false
+60,Delivery Failed,false,true
+70,Damaged,true,true
+80,Lost,true,true

@@ -6,6 +6,7 @@ incremental (created_at > max in DuckDB) when INCREMENTAL=1.
     python -m etl.extract_oltp
     INCREMENTAL=1 python -m etl.extract_oltp
 """
+
 from __future__ import annotations
 
 import os
@@ -18,14 +19,18 @@ from etl.utils import duckdb_connect, get_oltp_conn_string
 
 def extract_facilities(engine) -> pd.DataFrame:
     with engine.connect() as conn:
-        result = conn.execute(text("""
+        result = conn.execute(
+            text(
+                """
             SELECT facility_id,
                    facility_name,
                    facility_type,
                    city,
                    max_capacity_per_day
             FROM facilities
-        """))
+        """
+            )
+        )
         return pd.DataFrame(result.fetchall(), columns=list(result.keys()))
 
 
@@ -67,7 +72,9 @@ def run(incremental: bool = False) -> dict:
     duck = duckdb_connect()
 
     facilities_df = extract_facilities(engine)
-    duck.execute("CREATE OR REPLACE TABLE raw.facilities AS SELECT * FROM facilities_df")
+    duck.execute(
+        "CREATE OR REPLACE TABLE raw.facilities AS SELECT * FROM facilities_df"
+    )
 
     since = get_max_shipment_ts(duck) if incremental else None
     shipments_df = extract_shipments(engine, since=since)
@@ -75,7 +82,9 @@ def run(incremental: bool = False) -> dict:
     if incremental and since is not None:
         duck.execute("INSERT INTO raw.shipments SELECT * FROM shipments_df")
     else:
-        duck.execute("CREATE OR REPLACE TABLE raw.shipments AS SELECT * FROM shipments_df")
+        duck.execute(
+            "CREATE OR REPLACE TABLE raw.shipments AS SELECT * FROM shipments_df"
+        )
 
     stats = {
         "facilities_loaded": len(facilities_df),
